@@ -20,7 +20,11 @@ def recommand():
             response = client.Recommand(
                 recommand_pb2.RecommandRequest(user_id=params['userId'], page=int(params['page']),
                                                page_size=int(params['pageSize'])))
-            return generate_response_by_grpc_response(response)
+            resp_dict = MessageToDict(response)
+            return generate_response_by_grpc_response({
+                'itemIds': resp_dict['itemIds'] if 'itemIds' in resp_dict else [],
+                'pageInfo': generate_page_info(resp_dict['pageInfo'])
+            })
         except _Rendezvous as e:
             traceback.print_exc()
             return generate_response_by_grpc_response("", 1, str(e))
@@ -34,7 +38,7 @@ def set_default_recommand_items():
         try:
             response = client.SetDefaultRecommandItems(
                 recommand_pb2.SetDefaultRecommandItemsRequest(item_ids=params['itemIds']))
-            return generate_response_by_grpc_response(response)
+            return generate_response_by_grpc_response("")
         except _Rendezvous as e:
             traceback.print_exc()
             return generate_response_by_grpc_response("", 1, str(e))
@@ -54,8 +58,17 @@ def generate_response_by_grpc_response(data, code=0, msg="ok"):
     return jsonify({
         'code': code,
         'msg': msg,
-        'data': MessageToDict(data)
+        'data': data
     })
+
+
+def generate_page_info(page_info):
+    return {
+        'page': page_info['page'],
+        'pageSize': page_info['pageSize'],
+        'total': page_info['total'] if 'total' in page_info else 0,
+        'totalPage': page_info['totalPage'] if 'totalPage' in page_info else 0
+    }
 
 
 if __name__ == '__main__':
