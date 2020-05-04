@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from google.protobuf.json_format import MessageToDict
 from grpc._channel import _Rendezvous
 
+from pb.item import item_pb2, item_pb2_grpc
 from pb.recommand import recommand_pb2, recommand_pb2_grpc
 
 app = Flask(__name__)
@@ -39,6 +40,44 @@ def set_default_recommand_items():
             response = client.SetDefaultRecommandItems(
                 recommand_pb2.SetDefaultRecommandItemsRequest(item_ids=params['itemIds']))
             return generate_response_by_grpc_response("")
+        except _Rendezvous as e:
+            traceback.print_exc()
+            return generate_response_by_grpc_response("", 1, str(e))
+
+
+@app.route('/getItemList', methods=['GET'])
+def get_item_list():
+    with grpc.insecure_channel('localhost:50051') as channel:
+        client = item_pb2_grpc.ItemServiceStub(channel)
+        params = get_request_params()
+        try:
+            response = client.GetItemList(
+                item_pb2.GetItemListRequest(item_type=int(params['item_type']), page=int(params['page']),
+                                            page_size=int(params['page_size']))
+            )
+            resp_dict = MessageToDict(response)
+            return generate_response_by_grpc_response({
+                'list': resp_dict['items'],
+                'pageInfo': generate_page_info(resp_dict['pageInfo'])
+            })
+        except _Rendezvous as e:
+            traceback.print_exc()
+            return generate_response_by_grpc_response("", 1, str(e))
+
+
+@app.route('/getItem', methods=['GET'])
+def get_item():
+    with grpc.insecure_channel('localhost:50051') as channel:
+        client = item_pb2_grpc.ItemServiceStub(channel)
+        params = get_request_params()
+        try:
+            response = client.GetItem(
+                item_pb2.GetItemRequest(item_type=int(params['item_type']), id=params['id'])
+            )
+            resp_dict = MessageToDict(response)
+            return generate_response_by_grpc_response({
+                'item': resp_dict
+            })
         except _Rendezvous as e:
             traceback.print_exc()
             return generate_response_by_grpc_response("", 1, str(e))
