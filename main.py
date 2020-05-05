@@ -3,6 +3,7 @@ import traceback
 
 import grpc
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from google.protobuf.json_format import MessageToDict
 from grpc._channel import _Rendezvous
 
@@ -52,7 +53,8 @@ def get_item_list():
         params = get_request_params()
         try:
             response = client.GetItemList(
-                item_pb2.GetItemListRequest(item_type=int(params['item_type']), page=int(params['page']),
+                item_pb2.GetItemListRequest(item_type=item_pb2.ItemType.Value(params['item_type'].upper()),
+                                            page=int(params['page']),
                                             page_size=int(params['page_size']))
             )
             resp_dict = MessageToDict(response)
@@ -72,7 +74,7 @@ def get_item():
         params = get_request_params()
         try:
             response = client.GetItem(
-                item_pb2.GetItemRequest(item_type=int(params['item_type']), id=params['id'])
+                item_pb2.GetItemRequest(item_type=item_pb2.ItemType.Value(params['item_type'].upper()), id=params['id'])
             )
             resp_dict = MessageToDict(response)
             return generate_response_by_grpc_response({
@@ -111,4 +113,5 @@ def generate_page_info(page_info):
 
 
 if __name__ == '__main__':
+    CORS(app, supports_credentials=True)
     app.run("localhost", "8888")
