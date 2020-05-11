@@ -7,6 +7,7 @@ from flask_cors import CORS
 from google.protobuf.json_format import MessageToDict
 from grpc._channel import _Rendezvous
 
+from pb.action import action_pb2, action_pb2_grpc
 from pb.item import item_pb2, item_pb2_grpc
 from pb.recommand import recommand_pb2, recommand_pb2_grpc
 
@@ -20,11 +21,11 @@ def recommand():
         params = get_request_params()
         try:
             response = client.Recommand(
-                recommand_pb2.RecommandRequest(user_id=params['userId'], page=int(params['page']),
+                recommand_pb2.RecommandRequest(user_id=request.headers.get("USER_ID"), page=int(params['page']),
                                                page_size=int(params['pageSize'])))
             resp_dict = MessageToDict(response)
             return generate_response_by_grpc_response({
-                'itemIds': resp_dict['itemIds'] if 'itemIds' in resp_dict else [],
+                'list': resp_dict['items'],
                 'pageInfo': generate_page_info(resp_dict['pageInfo'])
             })
         except _Rendezvous as e:
@@ -38,7 +39,7 @@ def set_default_recommand_items():
         client = recommand_pb2_grpc.RecommandServiceStub(channel)
         params = get_request_params()
         try:
-            response = client.SetDefaultRecommandItems(
+            client.SetDefaultRecommandItems(
                 recommand_pb2.SetDefaultRecommandItemsRequest(item_ids=params['itemIds']))
             return generate_response_by_grpc_response("")
         except _Rendezvous as e:
@@ -80,6 +81,22 @@ def get_item():
             return generate_response_by_grpc_response({
                 'item': resp_dict
             })
+        except _Rendezvous as e:
+            traceback.print_exc()
+            return generate_response_by_grpc_response("", 1, str(e))
+
+
+@app.route('/action', methods=['GET'])
+def record_action():
+    with grpc.insecure_channel('localhost:50052') as channel:
+        client = action_pb2_grpc.ActionServiceStub(channel)
+        params = get_request_params()
+        try:
+            client.RecordAction(
+                action_pb2.RecordActionRequest(user_id=request.headers.get("USER_ID"), item_id=params['item_id'],
+                                               action='read',
+                                               item_type=action_pb2.ItemType.Value(params['item_type'].upper())))
+            return generate_response_by_grpc_response("")
         except _Rendezvous as e:
             traceback.print_exc()
             return generate_response_by_grpc_response("", 1, str(e))
