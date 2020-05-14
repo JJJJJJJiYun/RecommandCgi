@@ -25,7 +25,7 @@ def recommand():
                                                page_size=int(params['pageSize'])))
             resp_dict = MessageToDict(response)
             return generate_response_by_grpc_response({
-                'list': resp_dict['items'],
+                'list': resp_dict['items'] if 'items' in resp_dict else [],
                 'pageInfo': generate_page_info(resp_dict['pageInfo'])
             })
         except _Rendezvous as e:
