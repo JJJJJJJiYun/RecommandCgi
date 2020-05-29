@@ -54,9 +54,9 @@ def get_item_list():
         params = get_request_params()
         try:
             response = client.GetItemList(
-                item_pb2.GetItemListRequest(item_type=item_pb2.ItemType.Value(params['item_type'].upper()),
+                item_pb2.GetItemListRequest(item_type=item_pb2.ItemType.Value(params['itemType'].upper()),
                                             page=int(params['page']),
-                                            page_size=int(params['page_size']))
+                                            page_size=int(params['pageSize']))
             )
             resp_dict = MessageToDict(response)
             return generate_response_by_grpc_response({
@@ -75,7 +75,7 @@ def get_item():
         params = get_request_params()
         try:
             response = client.GetItem(
-                item_pb2.GetItemRequest(item_type=item_pb2.ItemType.Value(params['item_type'].upper()), id=params['id'])
+                item_pb2.GetItemRequest(item_type=item_pb2.ItemType.Value(params['itemType'].upper()), id=params['id'])
             )
             resp_dict = MessageToDict(response)
             return generate_response_by_grpc_response({
@@ -93,9 +93,9 @@ def record_action():
         params = get_request_params()
         try:
             client.RecordAction(
-                action_pb2.RecordActionRequest(user_id=request.headers.get("USER_ID"), item_id=params['item_id'],
-                                               action='read',
-                                               item_type=action_pb2.ItemType.Value(params['item_type'].upper())))
+                action_pb2.RecordActionRequest(user_id=request.headers.get("USER_ID"),
+                                               item_id=params['itemId'], action='read',
+                                               item_type=action_pb2.ItemType.Value(params['itemType'].upper())))
             return generate_response_by_grpc_response("")
         except _Rendezvous as e:
             traceback.print_exc()
